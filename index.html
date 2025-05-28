@@ -116,19 +116,23 @@
 
         ctx.fillStyle = 'white';
 
-        // Texto no topo (centralizado horizontalmente)
-        ctx.font = '32px Arial';
-        ctx.textBaseline = 'top';
-        const text = topTextInput.value;
-        const textWidth = ctx.measureText(text).width;
-        ctx.fillText(text, (canvas.width - textWidth) / 2, 10);
+        // Proporções baseadas na altura do vídeo
+        const topFontSize = canvas.height * 0.05;
+        const bottomFontSize = canvas.height * 0.035;
 
-        // Texto no canto inferior direito
-        ctx.font = '20px Arial';
+        // Texto superior centralizado
+        ctx.font = `${topFontSize}px Arial`;
+        ctx.textBaseline = 'top';
+        const topText = topTextInput.value;
+        const topTextWidth = ctx.measureText(topText).width;
+        ctx.fillText(topText, (canvas.width - topTextWidth) / 2, 10);
+
+        // Texto inferior no canto direito
+        ctx.font = `${bottomFontSize}px Arial`;
         ctx.textBaseline = 'bottom';
         const bottomText = 'Código 565';
-        const bottomWidth = ctx.measureText(bottomText).width;
-        ctx.fillText(bottomText, canvas.width - bottomWidth - 10, canvas.height - 10);
+        const bottomTextWidth = ctx.measureText(bottomText).width;
+        ctx.fillText(bottomText, canvas.width - bottomTextWidth - 10, canvas.height - 10);
 
         requestAnimationFrame(drawFrame);
       }
@@ -146,3 +150,4 @@
   </script>
 </body>
 </html>
+
