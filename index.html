@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Editor de Vídeo com Texto e Áudio</title>
+  <style>
+    body {
+      background: #121212;
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    input[type="file"], input[type="text"], button {
+      margin: 10px;
+      padding: 10px;
+      font-size: 16px;
+    }
+    canvas, video {
+      margin-top: 15px;
+      max-width: 100%;
+    }
+    button {
+      background: #e03e3e;
+      border: none;
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Editor de Vídeo com Texto e Áudio</h2>
+  <input type="file" accept="video/*" id="videoInput" />
+  <input type="text" id="topText" value="https://ddoito.github.io/kik/" />
+  <canvas id="canvas"></canvas>
+  <button id="downloadBtn" disabled>Salvar Vídeo</button>
+  <video id="outputVideo" controls></video>
+
+  <script>
+    const videoInput = document.getElementById('videoInput');
+    const topTextInput = document.getElementById('topText');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const outputVideo = document.getElementById('outputVideo');
+
+    let videoEl, mediaRecorder, recordedChunks = [];
+
+    videoInput.addEventListener('change', async () => {
+      const file = videoInput.files[0];
+      if (!file) return;
+
+      if (videoEl) videoEl.remove();
+
+      const url = URL.createObjectURL(file);
+      videoEl = document.createElement('video');
+      videoEl.src = url;
+      videoEl.crossOrigin = "anonymous";
+      videoEl.volume = 1;
+      videoEl.muted = false;
+      videoEl.playsInline = true;
+      videoEl.style.display = "none";
+      document.body.appendChild(videoEl);
+
+      await videoEl.play();
+
+      canvas.width = videoEl.videoWidth;
+      canvas.height = videoEl.videoHeight;
+
+      recordedChunks = [];
+
+      const canvasStream = canvas.captureStream(30);
+      const videoStream = videoEl.captureStream();
+      const audioTracks = videoStream.getAudioTracks();
+      const combinedStream = new MediaStream([
+        ...canvasStream.getVideoTracks(),
+        ...audioTracks
+      ]);
+
+      mediaRecorder = new MediaRecorder(combinedStream, {
+        mimeType: 'video/webm; codecs=vp8,opus'
+      });
+
+      mediaRecorder.ondataavailable = e => {
+        if (e.data.size > 0) recordedChunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        outputVideo.src = url;
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'video-editado.webm';
+        a.click();
+        downloadBtn.disabled = false;
+      };
+
+      mediaRecorder.start();
+
+      drawFrame();
+
+      videoEl.onended = () => {
+        mediaRecorder.stop();
+      };
+    });
+
+    function drawFrame() {
+      if (!videoEl.paused && !videoEl.ended) {
+        ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = 'white';
+
+        // Texto no topo (centralizado horizontalmente)
+        ctx.font = '32px Arial';
+        ctx.textBaseline = 'top';
+        const text = topTextInput.value;
+        const textWidth = ctx.measureText(text).width;
+        ctx.fillText(text, (canvas.width - textWidth) / 2, 10);
+
+        // Texto no canto inferior direito
+        ctx.font = '20px Arial';
+        ctx.textBaseline = 'bottom';
+        const bottomText = 'Código 565';
+        const bottomWidth = ctx.measureText(bottomText).width;
+        ctx.fillText(bottomText, canvas.width - bottomWidth - 10, canvas.height - 10);
+
+        requestAnimationFrame(drawFrame);
+      }
+    }
+
+    downloadBtn.addEventListener('click', () => {
+      if (recordedChunks.length === 0) return;
+      const blob = new Blob(recordedChunks, { type: 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'video-editado.webm';
+      a.click();
+    });
+  </script>
+</body>
+</html>
